@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TaskFlow — Task Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F5F2EE;
+      --card: #FFFDF9;
+      --accent: #2D5A3D;
+      --accent-light: #E8F0EA;
+      --text: #1A1A18;
+      --muted: #8A8780;
+      --border: #E2DDD6;
+      --danger: #C0392B;
+      --done-line: #A8B5AC;
+      --shadow: 0 2px 12px rgba(0,0,0,0.07);
+      --radius: 14px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 16px 80px;
+    }
+
+    /* ── Header ── */
+    header {
+      max-width: 580px;
+      margin: 0 auto 36px;
+    }
+    header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2.6rem;
+      color: var(--text);
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    header h1 span { color: var(--accent); }
+    header p {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 300;
+    }
+
+    /* ── Stats bar ── */
+    .stats {
+      max-width: 580px;
+      margin: 0 auto 24px;
+      display: flex;
+      gap: 12px;
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      flex: 1;
+      text-align: center;
+    }
+    .stat strong {
+      display: block;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .stat.done strong { color: var(--accent); }
+
+    /* ── Input card ── */
+    .input-card {
+      max-width: 580px;
+      margin: 0 auto 28px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+    .input-row input {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-row input:focus { border-color: var(--accent); }
+    .input-row input::placeholder { color: var(--muted); }
+    .input-row button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .input-row button:hover { opacity: 0.88; }
+    .input-row button:active { transform: scale(0.97); }
+
+    /* ── Filter tabs ── */
+    .filters {
+      max-width: 580px;
+      margin: 0 auto 16px;
+      display: flex;
+      gap: 6px;
+    }
+    .filter-btn {
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Task list ── */
+    .task-list {
+      max-width: 580px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .task-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: var(--shadow);
+      transition: opacity 0.2s, transform 0.2s;
+      animation: slideIn 0.2s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .task-item.completed { opacity: 0.65; }
+
+    /* Custom checkbox */
+    .check-btn {
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .check-btn:hover { border-color: var(--accent); }
+    .check-btn.checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .check-btn.checked::after {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 10px;
+      border: 2px solid #fff;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translateY(-1px);
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 0.97rem;
+      font-weight: 400;
+      color: var(--text);
+      word-break: break-word;
+      transition: color 0.2s;
+    }
+    .task-item.completed .task-text {
+      text-decoration: line-through;
+      color: var(--done-line);
+    }
+
+    .delete-btn {
+      background: transparent;
+      border: none;
+      color: var(--border);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+      line-height: 1;
+    }
+    .delete-btn:hover { color: var(--danger); background: #fdf0ee; }
+
+    /* ── Empty state ── */
+    .empty {
+      max-width: 580px;
+      margin: 40px auto;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty p { font-size: 0.95rem; }
+
+    /* ── Clear done button ── */
+    .clear-row {
+      max-width: 580px;
+      margin: 20px auto 0;
+      text-align: right;
+    }
+    .clear-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }
+    .clear-btn:hover { color: var(--danger); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Task<span>Flow</span></h1>
+    <p>A simple personal task manager — Course Project 1</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat">
+      <strong id="stat-total">0</strong>
+      Total
+    </div>
+    <div class="stat">
+      <strong id="stat-active">0</strong>
+      Active
+    </div>
+    <div class="stat done">
+      <strong id="stat-done">0</strong>
+      Completed
+    </div>
+  </div>
+
+  <div class="input-card">
+    <div class="input-row">
+      <input id="task-input" type="text" placeholder="Add a new task..." maxlength="120" />
+      <button onclick="addTask()">+ Add</button>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('active', this)">Active</button>
+    <button class="filter-btn" onclick="setFilter('completed', this)">Completed</button>
+  </div>
+
+  <div class="task-list" id="task-list"></div>
+  <div class="empty" id="empty-state" style="display:none">
+    <div class="empty-icon">✓</div>
+    <p>No tasks here. Add one above!</p>
+  </div>
+
+  <div class="clear-row">
+    <button class="clear-btn" onclick="clearCompleted()">Clear completed</button>
+  </div>
+
+<script>
+  let tasks = [];
+  let filter = 'all';
+  let nextId = 1;
+
+  const input = document.getElementById('task-input');
+
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+
+  function addTask() {
+    const text = input.value.trim();
+    if (!text) return;
+    tasks.unshift({ id: nextId++, text, completed: false });
+    input.value = '';
+    render();
+  }
+
+  function toggleTask(id) {
+    tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+    render();
+  }
+
+  function deleteTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    render();
+  }
+
+  function clearCompleted() {
+    tasks = tasks.filter(t => !t.completed);
+    render();
+  }
+
+  function setFilter(f, btn) {
+    filter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  function render() {
+    const list = document.getElementById('task-list');
+    const empty = document.getElementById('empty-state');
+
+    const visible = tasks.filter(t => {
+      if (filter === 'active') return !t.completed;
+      if (filter === 'completed') return t.completed;
+      return true;
+    });
+
+    document.getElementById('stat-total').textContent = tasks.length;
+    document.getElementById('stat-active').textContent = tasks.filter(t => !t.completed).length;
+    document.getElementById('stat-done').textContent = tasks.filter(t => t.completed).length;
+
+    if (visible.length === 0) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      list.innerHTML = visible.map(t => `
+        <div class="task-item ${t.completed ? 'completed' : ''}">
+          <button class="check-btn ${t.completed ? 'checked' : ''}" onclick="toggleTask(${t.id})"></button>
+          <span class="task-text">${escapeHtml(t.text)}</span>
+          <button class="delete-btn" onclick="deleteTask(${t.id})">✕</button>
+        </div>
+      `).join('');
+    }
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  render();
+</script>
+</body>
+</html>
